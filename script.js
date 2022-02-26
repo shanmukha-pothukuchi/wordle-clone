@@ -15409,11 +15409,19 @@ if (JSON.parse(localStorage.getItem("BOARD_STATE"))) {
   });
 }
 
+if (JSON.parse(localStorage.getItem("KEYBOARD_STATE"))) {
+  JSON.parse(localStorage.getItem("KEYBOARD_STATE")).forEach((e) => {
+    console.log(e);
+    renderKeyboard(e);
+  });
+}
+
 function checkGameOver() {
   if (row + 1 > rows.length) {
     alert(`${solution}`, false);
     localStorage.setItem("GAME_IN_PROGRESS", "false");
     localStorage.setItem("BOARD_STATE", JSON.stringify([]));
+    localStorage.setItem("KEYBOARD_STATE", JSON.stringify([]));
   }
 }
 
@@ -15551,6 +15559,17 @@ let handleKeydown = (e) => {
       eval: eval,
     };
     localStorage.setItem("BOARD_STATE", JSON.stringify(boardState));
+    if (JSON.parse(localStorage.getItem("KEYBOARD_STATE"))) {
+      localStorage.setItem(
+        "KEYBOARD_STATE",
+        JSON.stringify([
+          ...JSON.parse(localStorage.getItem("KEYBOARD_STATE")),
+          alphabetmapping,
+        ])
+      );
+    } else {
+      localStorage.setItem("KEYBOARD_STATE", JSON.stringify([alphabetmapping]));
+    }
 
     if (guess.toLowerCase() === solution) {
       renderRow(row, eval, true);
@@ -15563,6 +15582,7 @@ let handleKeydown = (e) => {
       gameActive = false;
       localStorage.setItem("GAME_IN_PROGRESS", "false");
       localStorage.setItem("BOARD_STATE", JSON.stringify([]));
+      localStorage.setItem("KEYBOARD_STATE", JSON.stringify([]));
       return;
     }
 
