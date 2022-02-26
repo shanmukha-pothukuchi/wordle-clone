@@ -1,3 +1,19 @@
+let gameActive = true;
+let shouldMakeNewLine = true;
+
+window.alert = (msg, shouldDelete = true) => {
+  shouldMakeNewLine = false;
+  const alertPopup = document.createElement("div");
+  alertPopup.classList.add("alert");
+  alertPopup.innerText = msg;
+  document.body.append(alertPopup);
+  if (!shouldDelete) return;
+  setTimeout(() => {
+    alertPopup.remove();
+    shouldMakeNewLine = true;
+  }, 1000);
+};
+
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -12968,7 +12984,6 @@ function isRealWord(_word) {
   );
 }
 
-// get random word from targetWords
 function getRandomWord() {
   let targetWords = [
     "cigar",
@@ -15290,8 +15305,19 @@ function getRandomWord() {
   return targetWords[Math.floor(Math.random() * targetWords.length)];
 }
 
-let solution = getRandomWord();
-// let solution = "smart";
+let solution;
+if (
+  localStorage.getItem("GAME_IN_PROGRESS") == "true" &&
+  localStorage.getItem("WORD").length == 5
+) {
+  solution = localStorage.getItem("WORD");
+} else {
+  while (solution == localStorage.getItem("WORD")) {
+    solution = getRandomWord();
+  }
+}
+localStorage.setItem("GAME_IN_PROGRESS", "true");
+localStorage.setItem("WORD", solution);
 
 const grid = [];
 const rows = document.querySelectorAll("[data-row]");
@@ -15321,11 +15347,14 @@ for (let key of keys) {
 
 let row = 0;
 
-let renderRow = async (rowIndex, cells, corectAnswer = false) => {
+let renderRow = async (rowIndex, cells, corectAnswer = false, word = null) => {
   if (!grid[rowIndex]) return;
 
   for (let i = 0; i < grid[rowIndex].length; i++) {
     const cell = grid[rowIndex][i];
+    if (word) {
+      cell.innerText = word[i].toUpperCase();
+    }
     if (cells[i] === "correct_place_correct_letter") {
       cell.classList.add("correct_place_correct_letter");
       await sleep(100);
@@ -15373,20 +15402,37 @@ let renderKeyboard = (alphabetmapping) => {
   }
 };
 
+if (JSON.parse(localStorage.getItem("BOARD_STATE"))) {
+  JSON.parse(localStorage.getItem("BOARD_STATE")).forEach((e, i) => {
+    renderRow(i, e.eval, false, e.word);
+    row = i + 1;
+  });
+}
+
+function checkGameOver() {
+  if (row + 1 > rows.length) {
+    alert(`${solution}`, false);
+    localStorage.setItem("GAME_IN_PROGRESS", "false");
+    localStorage.setItem("BOARD_STATE", JSON.stringify([]));
+  }
+}
+
 let handleKeydown = (e) => {
+  if (!gameActive) return;
+
   let key = e.key || e.detail.key;
 
   if (!grid[row]) return;
 
   if (key === "Enter") {
+    if (!shouldMakeNewLine) return;
+
     let guess = "";
     for (let i = 0; i < grid[row].length; i++) {
       const cell = grid[row][i];
       guess += cell.textContent;
     }
     if (guess.length < solution.length) return alert("Too short");
-    console.log(guess.toLowerCase() == solution);
-    console.log(isRealWord(guess.toLowerCase()));
     if (!(isRealWord(guess.toLowerCase()) || guess.toLowerCase() == solution))
       return alert("Not Real Word");
 
@@ -15457,16 +15503,6 @@ let handleKeydown = (e) => {
       z: null,
     };
 
-    if (guess.toLowerCase() === solution) {
-      for (let i = 0; i < grid[row].length; i++) {
-        eval[i] = "correct_place_correct_letter";
-        alphabetmapping[guess[i].toLowerCase()] = "true";
-      }
-      renderRow(row, eval, true);
-      renderKeyboard(alphabetmapping);
-      return;
-    }
-
     for (let i = 0; i < guess.length; i++) {
       const letter = guess[i].toLowerCase();
       if (letter == solution[i]) {
@@ -15509,9 +15545,31 @@ let handleKeydown = (e) => {
       }
     }
 
+    const boardState = JSON.parse(localStorage.getItem("BOARD_STATE")) || [];
+    boardState[row] = {
+      word: guess.toLowerCase(),
+      eval: eval,
+    };
+    localStorage.setItem("BOARD_STATE", JSON.stringify(boardState));
+
+    if (guess.toLowerCase() === solution) {
+      renderRow(row, eval, true);
+      renderKeyboard(alphabetmapping);
+      alert(
+        ["Lucky!", "Genius!", "Splendid!", "Amazing!", "Wonderful!", "Woah."][
+          row
+        ]
+      );
+      gameActive = false;
+      localStorage.setItem("GAME_IN_PROGRESS", "false");
+      localStorage.setItem("BOARD_STATE", JSON.stringify([]));
+      return;
+    }
+
     renderRow(row, eval);
     renderKeyboard(alphabetmapping);
     row++;
+    checkGameOver();
   }
 
   if (key === "Backspace") {
