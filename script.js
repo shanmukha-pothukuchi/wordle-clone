@@ -15312,9 +15312,9 @@ if (
 ) {
   solution = localStorage.getItem("WORD");
 } else {
-  while (solution == localStorage.getItem("WORD")) {
+  do {
     solution = getRandomWord();
-  }
+  } while (solution == localStorage.getItem("WORD"));
 }
 localStorage.setItem("GAME_IN_PROGRESS", "true");
 localStorage.setItem("WORD", solution);
@@ -15432,9 +15432,9 @@ let handleKeydown = (e) => {
       const cell = grid[row][i];
       guess += cell.textContent;
     }
-    if (guess.length < solution.length) return alert("Too short");
+    if (guess.length < solution.length) return alert("Not Enough Letters");
     if (!(isRealWord(guess.toLowerCase()) || guess.toLowerCase() == solution))
-      return alert("Not Real Word");
+      return alert("Not in Word List!");
 
     let eval = [];
     let alphabetcount = {
